@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unico"
+version = "0.1.0"
+description = "UniCO: A Unified Cross-View Collaboration Network"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+  "pandas",
+  "scikit-learn",
+  "torch",
+  "torchvision",
+  "pyts",
+  "barbar",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
