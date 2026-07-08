@@ -88,7 +88,23 @@ class ResNet50ImageEncoder(nn.Module):
         self.fc = nn.Linear(backbone.fc.in_features, feature_dim)
 
         for name, parameter in self.named_parameters():
-            parameter.requires_grad = name.startswith("layer4") or name.startswith("fc")
+            parameter.requires_grad = name.startswith("fc.")
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if mode:
+            for module in (
+                self.conv1,
+                self.bn1,
+                self.maxpool,
+                self.layer1,
+                self.layer2,
+                self.layer3,
+                self.layer4,
+                self.avgpool,
+            ):
+                module.eval()
+        return self
 
     def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         outputs = self.maxpool(self.relu(self.bn1(self.conv1(inputs))))
