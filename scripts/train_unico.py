@@ -23,7 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--attack-csv", type=str, default=None)
     parser.add_argument("--data-file", type=str, default="kddcup.data_10_percent_corrected")
     parser.add_argument("--image-npy", type=str, default=None)
-    parser.add_argument("--num-epochs", type=int, default=5)
+    parser.add_argument("--num-epochs", type=int, default=50)
     parser.add_argument("--batch-size", type=int, default=64)
     parser.add_argument("--window-size", type=int, default=16)
     parser.add_argument("--stride", type=int, default=1)
@@ -31,6 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--weight-decay", type=float, default=0.5e-6)
     parser.add_argument("--reg-weight", "--beta", dest="reg_weight", type=float, default=0.1)
     parser.add_argument("--consistency-lambda", type=float, default=0.01)
+    parser.add_argument("--threshold-percentile", type=float, default=0.95)
     parser.add_argument("--threshold-step", type=float, default=0.001)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--table-input-channels", type=int, default=1)
@@ -42,7 +43,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--lstm-layers", type=int, default=1)
     parser.add_argument("--bidirectional", action="store_true")
     parser.add_argument("--random-image-encoder", action="store_true")
-    parser.add_argument("--image-cache-batch-size", type=int, default=16)
     parser.add_argument("--no-image", action="store_true")
     parser.add_argument("--no-lstm", action="store_true")
     parser.add_argument("--no-point-adjust", action="store_true")
@@ -65,27 +65,17 @@ def default_files(args: argparse.Namespace) -> None:
     if args.dataset == "swat":
         args.normal_csv = args.normal_csv or "normal_swat_data.csv"
         args.attack_csv = args.attack_csv or "attack_swat_data.csv"
-        args.image_npy = args.image_npy or "gaf_images_swat.npy"
+        args.image_npy = args.image_npy or "mtf_images_swat.npy"
     elif args.dataset == "wadi":
         args.normal_csv = args.normal_csv or "normal_wadi_data.csv"
         args.attack_csv = args.attack_csv or "attack_wadi_data.csv"
-        args.image_npy = args.image_npy or "gaf_images_wadi.npy"
+        args.image_npy = args.image_npy or "mtf_images_wadi.npy"
     else:
-        args.image_npy = args.image_npy or "mtf_images_uni.npy"
+        args.image_npy = args.image_npy or "mtf_images_kdd.npy"
 
 
 def load_data(args: argparse.Namespace):
     data_dir = args.data_dir or (project_root() / "Data")
-    if not args.image_npy_provided and not (data_dir / args.image_npy).exists():
-        fallback_images = {
-            "swat": "mtf_images_swat.npy",
-            "wadi": "mtf_images_wadi.npy",
-            "kdd": "mtf_images_kdd.npy",
-        }
-        fallback = fallback_images.get(args.dataset)
-        if fallback and (data_dir / fallback).exists():
-            args.image_npy = fallback
-
     if args.dataset == "swat":
         return load_swat(
             data_dir,
@@ -133,7 +123,6 @@ def load_data(args: argparse.Namespace):
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
-    args.image_npy_provided = args.image_npy is not None
     default_files(args)
     set_seed(args.seed)
 
@@ -177,12 +166,15 @@ def main() -> None:
         "fusion_type": args.fusion_type,
         "device": str(device),
         "image_npy": args.image_npy,
-        "threshold_selection": "best_f1",
+        "threshold_selection": "train_score_95th_percentile",
+        "score_scale": "raw_svdd_distance",
+        "evaluation_adjustment": metrics["adjustment"],
         "metrics": metrics,
     }
 
     (output_dir / f"{run_name}.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     np.save(output_dir / f"{run_name}_scores.npy", result["scores"])
+    np.save(output_dir / f"{run_name}_train_scores.npy", result["train_scores"])
     np.save(output_dir / f"{run_name}_labels.npy", result["labels"])
     np.save(output_dir / f"{run_name}_predictions.npy", result["predictions"])
 
