@@ -66,7 +66,6 @@ def _tabular_bundle(
     max_train_windows: int | None = None,
     max_test_windows: int | None = None,
     load_images: bool = True,
-    segment_labels: np.ndarray | None = None,
 ) -> LoaderBundle:
     scaler = MinMaxScaler(feature_range=(0, 1))
     train_features = scaler.fit_transform(train_features)
@@ -94,7 +93,7 @@ def _tabular_bundle(
     return LoaderBundle(
         train_loader=DataLoader(train_dataset, batch_size=batch_size, shuffle=False),
         test_loader=DataLoader(test_dataset, batch_size=batch_size, shuffle=False),
-        attack_segments=attack_segments(segment_labels if segment_labels is not None else test_window_labels),
+        attack_segments=attack_segments(test_window_labels),
         num_features=train_table.shape[2],
         image_channels=image_windows.shape[1],
     )
@@ -130,7 +129,6 @@ def load_swat(
         max_train_windows,
         max_test_windows,
         load_images,
-        attack_df.iloc[:, -1].to_numpy(),
     )
 
 
@@ -165,7 +163,6 @@ def load_wadi(
         max_train_windows,
         max_test_windows,
         load_images,
-        attack_df.iloc[:, -1].to_numpy(),
     )
 
 
