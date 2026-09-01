@@ -1,12 +1,5 @@
 # UniCO: A Unified Cross-View Collaboration Network
 
-## Version Notice
-
-This repository was initially uploaded with a preliminary development version of the code. 
-Some scripts in that version were used for intermediate experiments and debugging, and therefore may not exactly match the final experimental protocol described in the manuscript.
-
-The current repository has been reorganized and updated to match the final implementation used for the reported results. 
-
 ## Layout
 
 - `src/unico/data/`: dataset loading, scaling, sliding windows
